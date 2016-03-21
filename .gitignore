@@ -39,4 +39,5 @@ node_modules
 ### PhPStorm ###
 .idea/
 
-### Client ###
+### Saved Messages ###
+savedMessages.txt

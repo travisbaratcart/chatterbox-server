@@ -12,20 +12,26 @@ this file and include it in basic-server.js so that it actually works.
 
 **************************************************************/
 
-// var savedMessages = {results: [{
-//   createdAt: '2013-1329101-1232',
-//   objectId: '1',
-//   roomname: 'hr40',
-//   text: 'this better work',
-//   updatedAt: '1232139-342345',
-//   username: 'literally hitler'
-// }]};
+
 
 var qs = require('querystring');
 var fs = require('fs');
 var path = require('path');
 
-var savedMessages = {results: []};
+var savedMessages;
+
+const logFilePath = './savedMessages.txt';
+fs.exists(logFilePath, function(exists) {
+  if (exists) {
+    fs.readFile(logFilePath, function(error, content) {
+      savedMessages = JSON.parse(content);
+    });
+  } else {
+    console.log(logFilePath + ' does not exist');
+  }
+});
+
+savedMessages = savedMessages || {results: []};
 
 var objectCount = 1;
 
@@ -66,28 +72,13 @@ var requestHandler = function(request, response) {
     }
   } else {
     var filePath = './client' + (request.url === '/' ? '/index.html' : request.url);
-    console.log(filePath);
-
-    fs.exists(filePath, function(exists) {
-      if (exists) {
-        console.log(filePath + ' exists');
-      } else {
-        console.log(filePath + ' does not exist');
-      }
-    });
 
     fs.readFile(filePath, function(error, content) {
-      console.log('testing' + filePath);
       if (error) {
-        console.log('errored');
         response.writeHead(500);
         response.end();
       } else {
-        // if (request.url.indexOf('.css') > -1) {
-        //   headers['Content-Type'] = 'text/plain';
-        // }
         ext = path.extname(filePath);
-        console.log(ext);
         headers['Content-Type'] = extensions[ext];
         response.writeHead(statusCode, headers);
         response.end(content);
@@ -134,6 +125,7 @@ var receiveMessage = function(request, response) {
       message.username = 'anonymous';
     }
     savedMessages.results.push(message);
+    fs.writeFile('./savedMessages.txt', JSON.stringify(savedMessages));
   });
 
 
