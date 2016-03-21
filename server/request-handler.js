@@ -21,47 +21,62 @@ this file and include it in basic-server.js so that it actually works.
 //   username: 'literally hitler'
 // }]};
 
-var requestHandler = function(request, response) {
-  // Request and Response come from node's http module.
-  //
-  // They include information about both the incoming request, such as
-  // headers and URL, and about the outgoing response, such as its status
-  // and content.
-  //
-  // Documentation for both request and response can be found in the HTTP section at
-  // http://nodejs.org/documentation/api/
+var qs = require('querystring');
 
-  // Do some basic logging.
-  //
-  // Adding more logging to your server can be an easy way to get passive
-  // debugging help, but you should always be careful about leaving stray
-  // console.logs in your code.
+var savedMessages = {results: []};
+
+var objectCount = 1;
+
+var requestHandler = function(request, response) {
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
 
-  // The outgoing status.
   var statusCode = 200;
 
-  // See the note below about CORS headers.
   var headers = defaultCorsHeaders;
+  headers['Content-Type'] = 'text/plain';
 
-  // Tell the client we are sending them plain text.
-  //
-  // You will need to change this if you are sending something
-  // other than plain text, like JSON or HTML.
-  headers['Content-Type'] = 'text/json';
+  if (request.method === 'GET') {
+    headers['Content-Type'] = 'text/json';
+    response.writeHead(statusCode, headers);
+    response.end(JSON.stringify(savedMessages)); 
+  } else if (request.method === 'POST') {
 
-  // .writeHead() writes to the request line and headers of the response,
-  // which includes the status and all headers.
-  response.writeHead(statusCode, headers);
+    var body = '';
 
-  // Make sure to always call response.end() - Node may not send
-  // anything back to the client until you do. The string you pass to
-  // response.end() will be the body of the response - i.e. what shows
-  // up in the browser.
-  //
-  // Calling .end "flushes" the response's internal buffer, forcing
-  // node to actually send all the data over to the client.
-  response.end(JSON.stringify(savedMessages));
+    request.on('data', function (data) {
+      body += data;
+
+        // Too much POST data, kill the connection!
+        // 1e6 === 1 * Math.pow(10, 6) === 1 * 1000000 ~~~ 1MB
+      if (body.length > 1e6) {
+        request.connection.destroy();
+      }
+    });
+
+    request.on('end', function () {
+      var post = qs.parse(body);
+      var message;
+
+      for (var key in post) {
+        message = JSON.parse(key);
+      }
+
+      message.objectId = objectCount++;
+      if (!message.username) {
+        message.username = 'anonymous';
+      }
+      savedMessages.results.push(message);
+    });
+
+
+    headers['Content-Type'] = 'text/plain';
+
+    response.writeHead(statusCode, headers);
+    response.end();
+  } else {
+    response.writeHead(statusCode, headers);
+    response.end('');
+  }
 };
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
