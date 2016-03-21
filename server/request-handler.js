@@ -73,15 +73,25 @@ var requestHandler = function(request, response) {
   } else {
     var filePath = './client' + (request.url === '/' ? '/index.html' : request.url);
 
-    fs.readFile(filePath, function(error, content) {
-      if (error) {
-        response.writeHead(500);
-        response.end();
-      } else {
-        ext = path.extname(filePath);
+    // fs.readFile(filePath, function(error, content) {
+    //   if (error) {
+    //     response.writeHead(500);
+    //     response.end();
+    //   } else {
+    //     ext = path.extname(filePath);
+    //     headers['Content-Type'] = extensions[ext];
+    //     response.writeHead(statusCode, headers);
+    //     response.end(content);
+    //   }
+    // });
+
+    fs.exists(filePath, function(exists) {
+      if (exists) {
+        var ext = path.extname(filePath);
         headers['Content-Type'] = extensions[ext];
         response.writeHead(statusCode, headers);
-        response.end(content);
+        var stream = fs.createReadStream(filePath);
+        stream.pipe(response);
       }
     });
   }
