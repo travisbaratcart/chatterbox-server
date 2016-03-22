@@ -1,10 +1,10 @@
 /* Import node's http module: */
 var http = require('http');
-var handleRequest = require('./request-handler.js');
 var express = require('express');
 var bodyParser = require('body-parser');
 var fs = require('fs');
 var path = require('path');
+var extend = require('xtend');
 
 var app2 = express();
 app2.use(bodyParser.urlencoded({extended: false}));
@@ -61,10 +61,7 @@ app2.get('/classes/messages', function(req, res) {
 });
 
 app2.post('/classes/messages', function(req, res) {
-  // console.log(req.body);
-  req.body.objectId = objectCount++;
-  req.body.username = req.body.username || 'anonymous';
-  req.body.createdAt = (new Date()).toJSON();
+  req.body = extend(req.body, {objectId: objectCount++, username: 'anonymous', createdAt: (new Date()).toJSON()});
   savedMessages.results.push(req.body);
   savedMessages.objectCount = objectCount;
   fs.writeFile('./savedMessages.txt', JSON.stringify(savedMessages));
